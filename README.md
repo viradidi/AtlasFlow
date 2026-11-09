@@ -225,7 +225,7 @@ These tables are related through primary keys and foreign keys where applicable.
 
 ### 6. Logistics Control Tower Dashboard
 
-The Gold dataset powers the Superset dashboard, which can include:
+The Gold dataset is designed to power a Superset dashboard with:
 
 - Total shipments
 - High-risk shipments
@@ -351,7 +351,7 @@ All generated changes are committed to PostgreSQL first. Debezium captures them,
 
 ## 📊 Dashboard
 
-The main business dashboard is built in Apache Superset using the Trino connection to the Gold Iceberg table.
+The Gold Iceberg table is exposed to Apache Superset through Trino. Follow the runbook to create the database connection, register the Gold dataset, and assemble the control-tower charts. A portable Superset dashboard export is not included in this repository, so those dashboard objects are created manually in the local environment.
 
 **Gold dataset:**
 
@@ -409,27 +409,21 @@ Do not replace `trino` with `localhost` in this container-to-container connectio
 ## 📂 Repository Structure
 
 ```text
-AtlasFlow_YouTube_Edition/
-│
+AtlasFlow/
 ├── .github/
 │   └── workflows/
 │       └── atlasflow-static-validation.yml
-│
 ├── connectors/
 │   └── postgres-cdc-connector.json
-│
 ├── docker/
 │   └── postgres/
 │       └── init/
 │           ├── 00-atlasflow-bootstrap.sh
 │           └── 10-atlasflow-schema.sql
-│
 ├── generators/
 │   └── generate_logistics_data.py
-│
 ├── infra/
-│   ├── flink/
-│   │   └── Dockerfile
+│   ├── flink/Dockerfile
 │   ├── observability/
 │   │   ├── blackbox/
 │   │   ├── grafana/
@@ -438,20 +432,17 @@ AtlasFlow_YouTube_Edition/
 │   │   ├── Dockerfile
 │   │   ├── init_superset_admin.py
 │   │   └── superset_config.py
-│   └── trino/
-│       └── catalog/
-│           └── atlasflow.properties
-│
+│   └── trino/catalog/atlasflow.properties
 ├── runtime/
-│   ├── bronze/
-│   ├── silver/
-│   └── gold/
-│
+│   ├── bronze/.gitkeep
+│   ├── silver/.gitkeep
+│   └── gold/.gitkeep
 ├── scripts/
 │   ├── check-atlasflow-static.py
 │   ├── create-connect-topics.ps1
 │   ├── prepare-local-env.ps1
 │   ├── register-debezium-connectors.ps1
+│   ├── run-trino-query-pack.py
 │   ├── setup-cdc-publications.ps1
 │   ├── smoke-test-atlasflow.py
 │   ├── start-gold-stream.ps1
@@ -459,18 +450,11 @@ AtlasFlow_YouTube_Edition/
 │   ├── verify-atlasflow.ps1
 │   ├── wait-for-cdc-snapshot.py
 │   └── wait-for-demo-events.py
-│
 ├── sql/
 │   ├── bronze/
-│   │   ├── bootstrap_bronze_tables.sql.template
-│   │   └── 01_cdc_to_bronze.sql.template
 │   ├── silver/
-│   │   ├── bootstrap_silver_tables.sql.template
-│   │   └── 01_cdc_to_silver.sql.template
-│   └── gold/
-│       ├── bootstrap_gold_tables.sql.template
-│       └── stream_shipment_control_tower.sql.template
-│
+│   ├── gold/
+│   └── atlasflow_queries.sql
 ├── .env.example
 ├── .gitignore
 ├── compose.yaml
@@ -514,4 +498,4 @@ Static validation checks repository structure, SQL template presence, Python syn
 
 ## 👨‍💻 Author
 
-Isaiah nyakundi 
+Isaiah Nyakundi 
