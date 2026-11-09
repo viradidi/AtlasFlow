@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static validation for the simplified AtlasFlow YouTube project."""
+"""Static source and repository-contract validation for AtlasFlow."""
 from __future__ import annotations
 import ast, json, re, sys, subprocess
 from pathlib import Path
@@ -17,7 +17,7 @@ def read(rel: str) -> str:
     if not p.is_file(): check(False, f"required file exists: {rel}"); return ""
     return p.read_text(encoding='utf-8-sig')
 def main() -> int:
-    print('AtlasFlow YouTube Edition — static validation')
+    print('AtlasFlow — static validation')
     compose_text=read('compose.yaml')
     try:
         compose=yaml.safe_load(compose_text); services=compose.get('services',{})
@@ -96,6 +96,16 @@ def main() -> int:
     for rel in ['scripts/submit-streaming-stage.ps1','scripts/start-gold-stream.ps1','scripts/prepare-local-env.ps1','scripts/run-trino-query-pack.py','scripts/wait-for-cdc-snapshot.py','scripts/wait-for-demo-events.py','scripts/smoke-test-atlasflow.py']:
         check((ROOT/rel).is_file(),f'required helper exists: {rel}')
     check(not any(p.name.startswith('refresh_') for p in (ROOT/'scripts').glob('*.ps1')),'old batch Gold refresh script is removed')
+    check('CREATE TABLE IF NOT EXISTS atlasflow.gold.shipment_control_tower' in gold_ddl and 'DROP TABLE IF EXISTS atlasflow.gold.shipment_control_tower' not in gold_ddl,'Gold bootstrap preserves the existing control-tower table on restart')
+    query_pack=read('sql/atlasflow_queries.sql')
+    check(query_pack.count(';') >= 6 and 'atlasflow.gold.shipment_control_tower' in query_pack,'read-only Trino query pack is present and targets the Gold control-tower table')
+    smoke=read('scripts/smoke-test-atlasflow.py')
+    expected_jobs={'atlasflow-bronze-cdc','atlasflow-silver-cdc-normalize','atlasflow-gold-control-tower-stream'}
+    check(all(job in smoke for job in expected_jobs) and 'atlasflow-silver-current-state-models' not in smoke,'live smoke test expects exactly the three documented Flink jobs')
+    check(all((ROOT/rel).is_dir() for rel in ['runtime/bronze','runtime/silver','runtime/gold']),'all runtime bind-mount directories exist in a clean checkout')
+    env_values=dict(line.split('=',1) for line in env.splitlines() if line and not line.lstrip().startswith('#') and '=' in line)
+    check(all(value.startswith('change_this_') for key,value in env_values.items() if key.endswith('PASSWORD') or key in {'RUSTFS_ACCESS_KEY','RUSTFS_SECRET_KEY'}),'environment template contains placeholders rather than reusable credentials')
+    check('actions/checkout@v7' in read('.github/workflows/atlasflow-static-validation.yml') and 'actions/setup-python@v7' in read('.github/workflows/atlasflow-static-validation.yml'),'GitHub Actions workflow uses current major action versions')
     workflow=yaml.safe_load(read('.github/workflows/atlasflow-static-validation.yml'))
     check(isinstance(workflow,dict) and 'validate' in workflow.get('jobs',{}),'GitHub Actions runs static validation')
     print(f'\nSummary: {CHECKS} checks, {len(FAILURES)} failure(s)')
