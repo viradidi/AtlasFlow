@@ -17,15 +17,30 @@
 
 ## 📌 Project Overview
 
-**AtlasFlow** is an end-to-end, real-time data engineering project built around a global logistics and supply chain use case.
+**AtlasFlow** is a real-time logistics data platform that turns operational changes into a continuously updated shipment-level control tower.
 
-The project simulates the operational data of a fictional logistics company, **ABC Logistics**, and builds a real-time Logistics Control Tower that brings shipment, order, customer, carrier, inventory, tracking, and disruption information together.
+Built around a fictional logistics operator, **ABC Logistics**, the platform unifies order, customer, carrier, inventory, shipment, tracking, and disruption data. Its purpose is to help operations teams identify delayed shipments, inventory shortages, active disruptions, and shipments requiring attention as source data changes.
 
-The business objective is to help logistics operations teams identify shipment delays, inventory shortages, active disruptions, and high-risk shipments as operational data changes.
+The architecture uses PostgreSQL as the operational source of truth, Debezium for Change Data Capture (CDC), Kafka for event transport, Flink SQL for continuous processing, and Iceberg for lakehouse storage. Trino provides SQL access to the Gold serving table, while Apache Superset is the intended business-intelligence layer. RustFS and an Iceberg REST Catalog provide the local object-storage and catalog components.
 
-We use PostgreSQL as the operational database, Debezium for Change Data Capture (CDC), Apache Kafka for event streaming, Apache Flink SQL for continuous processing, and Apache Iceberg for the lakehouse storage layer. Trino provides SQL access to the Iceberg tables, while Apache Superset turns the Gold data into an interactive business dashboard.
+The complete demonstration environment is orchestrated locally with Docker Compose.
 
-The entire environment runs locally using Docker Compose.
+### Platform at a Glance
+
+| Dimension | Implementation |
+|---|---|
+| Business domain | Logistics and shipment operations |
+| Operational source | PostgreSQL, with seven related source tables |
+| Change capture and transport | Debezium PostgreSQL CDC and Kafka |
+| Stream processing | Three long-running Flink jobs across Bronze, Silver, and Gold |
+| Lakehouse format | Apache Iceberg, registered through an Iceberg REST Catalog |
+| Object storage | RustFS with an S3-compatible API |
+| SQL serving | Trino |
+| BI layer | Apache Superset, configured from the runbook |
+| Gold serving grain | One current-state record per `shipment_id` |
+| Local orchestration | Docker Compose |
+
+**Core outcome:** a continuously maintained shipment view with operational context, a deterministic risk classification, and a primary reason explaining why a shipment needs attention.
 
 ---
 
@@ -140,6 +155,27 @@ There are no separate eight-table Silver current-state models.
 Instead, Gold reads the append-only Silver CDC history and creates temporary views inside its streaming query to identify the latest valid records for each source entity. It combines those records to build the shipment-level business model.
 
 The Gold table uses `shipment_id` as its key and supports streaming upserts, allowing an existing shipment row to be updated as new operational changes arrive.
+
+### Engineering Decisions and Trade-offs
+
+| Decision | Why it was chosen | Trade-off to understand |
+|---|---|---|
+| PostgreSQL is the write path | The generator commits operational changes to the source database first; Debezium captures those committed changes from the database log. | The CDC pipeline depends on PostgreSQL availability, logical-replication configuration, and connector health. |
+| One consolidated business CDC topic | The current design routes business-table changes through `atlasflow.cdc.v1`, giving the downstream pipeline one event ingress point. | Consumers must interpret the source-entity metadata correctly. Topic partitioning and throughput should be revisited as event volume and ordering requirements grow. |
+| Silver is append-only CDC history | Silver retains normalized change records instead of maintaining a separate persistent current-state table for every source entity. | More state-reconstruction logic is concentrated in the Gold streaming transformation, which increases the importance of testing entity selection, update ordering, and recovery behaviour. |
+| Gold is keyed by `shipment_id` | The serving model is optimized for the current operational view of each shipment. | Gold is not intended to be a complete shipment-event ledger. Consumers needing event-by-event history should query the CDC history in Silver. |
+| Risk is rule-based and explainable | Explicit business conditions produce a risk level and a primary reason that operations users can interpret. | The classification is deterministic, not predictive. Thresholds and precedence rules require business review as operational policy changes. |
+| Local Docker Compose deployment | The stack can be brought up as a self-contained development and demonstration environment. | A local deployment does not establish production high availability, disaster recovery, cloud scalability, or production security posture. |
+
+These are deliberate scope choices for this implementation, not claims that the design is universally optimal. They also identify the areas to revisit when moving from a local demonstration into a managed production platform.
+
+### Processing Scope and Interpretation
+
+- **Bronze** retains the raw Debezium CDC envelopes and Kafka metadata.
+- **Silver** stores normalized, append-only change history.
+- **Gold** reconstructs the latest relevant source records and publishes the current shipment-level operational view.
+- Shipment risk is derived from explicit source conditions and precedence rules. It is not a machine-learning score or a probability of late delivery.
+- The data generator creates synthetic demonstration data. Results illustrate pipeline behaviour and business logic; they are not measurements from a real logistics operator.
 
 ---
 
@@ -482,6 +518,19 @@ For live platform diagnostics, the repository also includes:
 ```
 
 Static validation checks repository structure, SQL template presence, Python syntax, YAML/JSON configuration, and key pipeline contracts. It does not replace a live Docker integration test of Flink SQL jobs.
+
+### Evidence and Validation Boundaries
+
+| Evidence type | What it establishes | What it does not establish |
+|---|---|---|
+| Owner-confirmed execution | The project owner has confirmed that the completed platform was successfully run in its intended local environment. | It is not independently reproducible from retained logs or a hosted runtime in this repository. |
+| GitHub Actions static validation | Automated checks validate repository structure, source syntax, configuration files, and selected pipeline/query contracts. See [the validation workflow](.github/workflows/atlasflow-static-validation.yml). | It does not start the Docker stack, execute the Flink SQL jobs, verify end-to-end CDC propagation, or benchmark latency and throughput. |
+| Live diagnostic scripts | The repository provides scripts for smoke testing and operational verification when the local stack is running. | The presence of a script is not evidence that a fresh diagnostic run has been captured. |
+| Superset dashboard | The Gold serving model and dashboard setup procedure are documented in this README and the runbook. | A portable dashboard export or retained dashboard screenshot is not currently included. |
+
+This distinction is intentional: a passing static workflow is useful repository evidence, while a live integration run is a separate operational test. No throughput, latency, availability, or cost figures are claimed because reproducible benchmark results are not retained here.
+
+For a fresh technical demonstration, capture the Docker Compose service state, the three Flink job states, a Trino query against `atlasflow.gold.shipment_control_tower`, and the configured Superset dashboard. Keep credentials, tokens, and sensitive environment values out of screenshots and logs.
 
 ---
 
