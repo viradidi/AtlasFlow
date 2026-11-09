@@ -8,8 +8,7 @@ CREATE CATALOG atlasflow WITH (
   's3.secret-access-key' = '__RUSTFS_SECRET_KEY__', 's3.path-style-access' = 'true'
 );
 CREATE DATABASE IF NOT EXISTS atlasflow.gold;
-DROP TABLE IF EXISTS atlasflow.gold.shipment_control_tower;
-CREATE TABLE atlasflow.gold.shipment_control_tower (
+CREATE TABLE IF NOT EXISTS atlasflow.gold.shipment_control_tower (
   shipment_id STRING,
   order_id STRING, external_order_ref STRING,
   customer_id STRING, customer_name STRING, customer_segment STRING,
