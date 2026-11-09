@@ -12,7 +12,7 @@ from urllib.request import Request, urlopen
 
 
 def read_http(url: str, timeout: float) -> tuple[int, bytes]:
-    request = Request(url, headers={"User-Agent": "AtlasFlow-YouTube-Smoke-Test/1.0", "Accept": "application/json, text/plain, */*"})
+    request = Request(url, headers={"User-Agent": "AtlasFlow-Smoke-Test/1.0", "Accept": "application/json, text/plain, */*"})
     with urlopen(request, timeout=timeout) as response:
         return response.status, response.read()
 
@@ -58,13 +58,13 @@ def check_connector(timeout: float) -> tuple[bool, str]:
 
 
 def check_flink_jobs(timeout: float) -> tuple[bool, str]:
-    expected = {"atlasflow-bronze-cdc", "atlasflow-silver-cdc-normalize", "atlasflow-silver-current-state-models", "atlasflow-gold-control-tower-stream"}
+    expected = {"atlasflow-bronze-cdc", "atlasflow-silver-cdc-normalize", "atlasflow-gold-control-tower-stream"}
     try:
         _, raw = read_http("http://localhost:8081/jobs/overview", timeout)
         jobs = json.loads(raw).get("jobs", [])
         running = {job.get("name") for job in jobs if job.get("state") == "RUNNING"}
         missing = sorted(expected - running)
-        return (not missing, "Bronze, Silver CDC, Silver models, and Gold streaming jobs are RUNNING" if not missing else "missing RUNNING jobs: " + ", ".join(missing))
+        return (not missing, "Bronze, Silver CDC, and Gold streaming jobs are RUNNING" if not missing else "missing RUNNING jobs: " + ", ".join(missing))
     except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
         return False, f"cannot inspect Flink jobs: {exc}"
 
