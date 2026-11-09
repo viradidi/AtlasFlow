@@ -5,7 +5,7 @@ This runbook walks through the complete local AtlasFlow pipeline, from PostgreSQ
 Run all PowerShell commands from the repository root:
 
 ```text
-AtlasFlow_YouTube_Edition/
+AtlasFlow/
 ```
 
 The project uses three long-running Flink jobs:
@@ -413,7 +413,15 @@ The Gold table is:
 shipment_control_tower
 ```
 
-There is no bundled SQL query pack required for this workflow. You can run the following checks from Superset SQL Lab after creating the Trino connection.
+A reusable, read-only Trino query pack is included at `sql/atlasflow_queries.sql`. It covers overall control-tower KPIs, risk distribution, the shipment attention queue, carrier risk, inventory shortages, and tracking delays.
+
+After the Gold table is available, run the query pack from the repository root:
+
+```powershell
+python .\scripts\run-trino-query-pack.py
+```
+
+The script connects to the host-mapped Trino endpoint at `http://localhost:18080`. You can also copy individual statements from the SQL file into Superset SQL Lab after creating the Trino connection.
 
 **Check shipment counts by risk level:**
 
