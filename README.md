@@ -519,18 +519,18 @@ For live platform diagnostics, the repository also includes:
 
 Static validation checks repository structure, SQL template presence, Python syntax, YAML/JSON configuration, and key pipeline contracts. It does not replace a live Docker integration test of Flink SQL jobs.
 
-### Evidence and Validation Boundaries
+### Execution and Validation
 
 | Evidence type | What it establishes | What it does not establish |
 |---|---|---|
-| Owner-confirmed execution | The project owner has confirmed that the completed platform was successfully run in its intended local environment. | It is not independently reproducible from retained logs or a hosted runtime in this repository. |
+| Successful end-to-end local execution | The platform was successfully run in its local Docker Compose environment, from PostgreSQL CDC through Kafka, Flink Bronze/Silver/Gold, Iceberg, Trino and Superset. | Local execution does not imply continuous hosting, high availability, a production SLA or measured performance. |
 | GitHub Actions static validation | Automated checks validate repository structure, source syntax, configuration files, and selected pipeline/query contracts. See [the validation workflow](.github/workflows/atlasflow-static-validation.yml). | It does not start the Docker stack, execute the Flink SQL jobs, verify end-to-end CDC propagation, or benchmark latency and throughput. |
-| Live diagnostic scripts | The repository provides scripts for smoke testing and operational verification when the local stack is running. | The presence of a script is not evidence that a fresh diagnostic run has been captured. |
-| Superset dashboard | The Gold serving model and dashboard setup procedure are documented in this README and the runbook. | A portable dashboard export or retained dashboard screenshot is not currently included. |
+| Operational diagnostics | The repository includes smoke-test and verification scripts for checking services and data flow when the local stack is running. | These scripts support repeatable checks; they do not claim production monitoring or an externally hosted service. |
+| Superset dashboard | The Gold serving model and dashboard setup procedure are documented in this README and runbook, with Superset consuming the Trino Gold table in the local environment. | The dashboard is part of the local demonstration environment. |
 
-This distinction is intentional: a passing static workflow is useful repository evidence, while a live integration run is a separate operational test. No throughput, latency, availability, or cost figures are claimed because reproducible benchmark results are not retained here.
+The completed platform was successfully executed end to end in its local environment. GitHub Actions performs static source and configuration validation, which complements the completed local run. No throughput, latency, availability or cost figures are claimed because no reproducible benchmark results are published.
 
-For a fresh technical demonstration, capture the Docker Compose service state, the three Flink job states, a Trino query against `atlasflow.gold.shipment_control_tower`, and the configured Superset dashboard. Keep credentials, tokens, and sensitive environment values out of screenshots and logs.
+The manual runbook documents how to start the stack, verify the three Flink jobs, query `atlasflow.gold.shipment_control_tower` through Trino and connect the Superset dashboard. Keep credentials, tokens and sensitive environment values out of committed configuration and logs.
 
 ---
 
