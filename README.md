@@ -1,29 +1,22 @@
-# 🚚 AtlasFlow — Real-Time Logistics Control Tower
+# AtlasFlow — Real-Time Logistics Control Tower
 
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
-![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?logo=apachekafka&logoColor=white)
-![Debezium](https://img.shields.io/badge/Debezium-EF3B2D?logo=apache&logoColor=white)
-![Apache Flink](https://img.shields.io/badge/Apache%20Flink-E6526F?logo=apacheflink&logoColor=white)
-![Apache Iceberg](https://img.shields.io/badge/Apache%20Iceberg-4B8BBE?logo=apache&logoColor=white)
-![Trino](https://img.shields.io/badge/Trino-5C6BC0?logo=trino&logoColor=white)
-![Apache Superset](https://img.shields.io/badge/Apache%20Superset-20A6C9?logo=apachesuperset&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white)
-![Grafana](https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)
+A real-time logistics data platform that captures operational changes from PostgreSQL, streams them through Debezium and Kafka, processes them continuously with Flink, and publishes a shipment-level control tower in an Apache Iceberg lakehouse.
+
+**Stack:** PostgreSQL, Debezium, Apache Kafka, Apache Flink SQL, Apache Iceberg, Iceberg REST Catalog, RustFS, Trino, Apache Superset, Python, Docker Compose, Prometheus, Grafana.
+
+> **Execution status — completed:** Successfully run end to end in the local Docker Compose environment, from PostgreSQL CDC through Kafka, Flink Bronze/Silver/Gold processing, Iceberg storage, Trino serving and the Superset control-tower experience. The project is a local engineering demonstration, not a claim of continuously hosted production service.
 
 ---
 
-## 📌 Project Overview
+## Project overview
 
 **AtlasFlow** is a real-time logistics data platform that turns operational changes into a continuously updated shipment-level control tower.
 
 Built around a fictional logistics operator, **ABC Logistics**, the platform unifies order, customer, carrier, inventory, shipment, tracking, and disruption data. Its purpose is to help operations teams identify delayed shipments, inventory shortages, active disruptions, and shipments requiring attention as source data changes.
 
-The architecture uses PostgreSQL as the operational source of truth, Debezium for Change Data Capture (CDC), Kafka for event transport, Flink SQL for continuous processing, and Iceberg for lakehouse storage. Trino provides SQL access to the Gold serving table, while Apache Superset is the intended business-intelligence layer. RustFS and an Iceberg REST Catalog provide the local object-storage and catalog components.
+The architecture uses PostgreSQL as the operational source of truth, Debezium for Change Data Capture (CDC), Kafka for event transport, Flink SQL for continuous processing, and Iceberg for lakehouse storage. Trino provides SQL access to the Gold serving table, while Apache Superset provides the business-intelligence layer. RustFS and an Iceberg REST Catalog provide the local object-storage and catalog components.
 
-The complete demonstration environment is orchestrated locally with Docker Compose.
+The complete end-to-end demonstration environment is orchestrated locally with Docker Compose.
 
 ### Platform at a Glance
 
@@ -36,7 +29,7 @@ The complete demonstration environment is orchestrated locally with Docker Compo
 | Lakehouse format | Apache Iceberg, registered through an Iceberg REST Catalog |
 | Object storage | RustFS with an S3-compatible API |
 | SQL serving | Trino |
-| BI layer | Apache Superset, configured from the runbook |
+| BI layer | Apache Superset dashboard |
 | Gold serving grain | One current-state record per `shipment_id` |
 | Local orchestration | Docker Compose |
 
@@ -44,7 +37,7 @@ The complete demonstration environment is orchestrated locally with Docker Compo
 
 ---
 
-## 🎯 Business Problem
+## Business problem
 
 Logistics operations involve multiple systems:
 
@@ -68,7 +61,7 @@ AtlasFlow addresses this problem by continuously processing operational changes 
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 The project follows a **Bronze → Silver → Gold** data architecture.
 
@@ -179,7 +172,7 @@ These are deliberate scope choices for this implementation, not claims that the 
 
 ---
 
-## 🗄️ PostgreSQL Source Tables
+## PostgreSQL source tables
 
 The operational database is named `atlasflow_ops` and contains seven related source tables.
 
@@ -197,7 +190,7 @@ These tables are related through primary keys and foreign keys where applicable.
 
 ---
 
-## ⚡ Technology Stack
+## Technology stack
 
 | Technology | Role in AtlasFlow |
 |---|---|
@@ -218,7 +211,7 @@ These tables are related through primary keys and foreign keys where applicable.
 
 ---
 
-## 🔥 Key Features
+## Key features
 
 ### 1. Operational Data Generation
 
@@ -282,7 +275,7 @@ The Gold dataset is designed to power a Superset dashboard with:
 
 ---
 
-## 🚦 Gold Business Model and Risk Classification
+## Gold business model and risk classification
 
 The Gold table, `atlasflow.gold.shipment_control_tower`, contains one keyed record per shipment.
 
@@ -315,7 +308,7 @@ The `primary_risk_reason` column explains the first applicable risk condition. T
 
 ---
 
-## 🧪 Running the Project
+## Running the project
 
 ### Requirements
 
@@ -349,7 +342,7 @@ The complete eight-step pipeline procedure is documented in [`MANUAL-RUNBOOK.md`
 
 ---
 
-## 🔄 Data Generation
+## Data generation
 
 The generator supports two one-shot scenarios and an optional continuous mode.
 
@@ -385,7 +378,7 @@ All generated changes are committed to PostgreSQL first. Debezium captures them,
 
 ---
 
-## 📊 Dashboard
+## Dashboard
 
 The Gold Iceberg table is exposed to Apache Superset through Trino. Follow the runbook to create the database connection, register the Gold dataset, and assemble the control-tower charts. A portable Superset dashboard export is not included in this repository, so those dashboard objects are created manually in the local environment.
 
@@ -412,7 +405,7 @@ The table should highlight HIGH and MEDIUM shipments and display `primary_risk_r
 
 ---
 
-## 🔗 Service Endpoints
+## Service endpoints
 
 All services are intended for local development and are exposed through the configured Docker Compose ports.
 
@@ -442,7 +435,7 @@ Do not replace `trino` with `localhost` in this container-to-container connectio
 
 ---
 
-## 📂 Repository Structure
+## Repository structure
 
 ```text
 AtlasFlow/
@@ -501,7 +494,7 @@ AtlasFlow/
 
 ---
 
-## ✅ Validation
+## Validation
 
 The repository includes static validation and live health-check utilities.
 
@@ -534,7 +527,7 @@ The manual runbook documents how to start the stack, verify the three Flink jobs
 
 ---
 
-## 🔐 Security and Usage Notes
+## Security and usage notes
 
 - This is a local educational and demonstration environment.
 - Do not expose the services publicly without proper security configuration.
@@ -545,6 +538,6 @@ The manual runbook documents how to start the stack, verify the three Flink jobs
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 Isaiah Nyakundi 
